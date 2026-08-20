@@ -306,6 +306,9 @@ function renderHome() {
 // ============================================================
 // 6. OVERVIEW (Dashboard) with Calendar
 // ============================================================
+// ============================================================
+// 6. OVERVIEW (Dashboard) with Calendar
+// ============================================================
 function monthHTML(year, month) {
   const first = new Date(year, month, 1), last = new Date(year, month+1, 0);
   const start = first.getDay();
@@ -318,7 +321,6 @@ function monthHTML(year, month) {
   for (let d=1; d<=last.getDate(); d++) {
     const key = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     
-    // --- โค้ดใหม่ที่อัปเดตแล้ว เริ่มตรงนี้ ---
     const ev = state.items.filter(i => {
       const planStr = (i.dueDate || '').substring(0, 10);
       const actualStr = (i.actualDate || '').substring(0, 10);
@@ -331,26 +333,90 @@ function monthHTML(year, month) {
       const cls = i.status || 'planned';
       
       let badges = '';
-      
-      // 1. ถ้านี่คือวันตามแผน (Plan)
-      if (planStr === key) {
-        badges += `<div class="event ${cls}" title="Plan: ${esc(i.model)} ${esc(i.color)}">🎯 [Plan] ${esc(i.model)}</div>`;
-      }
-      
-      // 2. ถ้านี่คือวันที่ส่งจริง (Actual)
-      if (actualStr === key) {
-        badges += `<div class="event approved" title="Actual: ${esc(i.model)} ${esc(i.color)}">✅ [Actual] ${esc(i.model)}</div>`;
-      }
+      if (planStr === key) badges += `<div class="event ${cls}" title="Plan: ${esc(i.model)} ${esc(i.color)}">🎯 [Plan] ${esc(i.model)}</div>`;
+      if (actualStr === key) badges += `<div class="event approved" title="Actual: ${esc(i.model)} ${esc(i.color)}">✅ [Actual] ${esc(i.model)}</div>`;
       
       return badges;
     }).join('');
-    // --- สิ้นสุดโค้ดใหม่ ---
 
     cells.push(`<div class="day"><div class="day-num">${d}</div>${evHtml}</div>`);
   }
   
   const name = first.toLocaleDateString('th-TH', { month:'long', year:'numeric' });
   return `<div class="month"><div class="month-title">${name}</div><div class="week">${['อา','จ','อ','พ','พฤ','ศ','ส'].map(x=>`<div>${x}</div>`).join('')}</div><div class="days">${cells.join('')}</div></div>`;
+}
+
+function isMobileView() { return window.matchMedia('(max-width:768px)').matches; }
+
+function renderCalendar() {
+  let y1=calState.year, m1=calState.month;
+  if (isMobileView()) {
+    return `<div class="calendar-wrap">
+      <div class="calendar-nav">
+        <button class="btn btn-light" onclick="calPrev()">◀</button>
+        <span class="month-label">${new Date(y1,m1).toLocaleDateString('th-TH',{month:'long',year:'numeric'})}</span>
+        <button class="btn btn-light" onclick="calNext()">▶</button>
+      </div>
+      <div class="calendar-grid">${monthHTML(y1,m1)}</div>
+    </div>`;
+  }
+  let y2=y1, m2=m1+1;
+  if (m2>11) { m2=0; y2++; }
+  return `<div class="calendar-wrap">
+    <div class="calendar-nav">
+      <button class="btn btn-light" onclick="calPrev()">◀ ก่อนหน้า</button>
+      <span class="month-label">${new Date(y1,m1).toLocaleDateString('th-TH',{month:'long',year:'numeric'})} — ${new Date(y2,m2).toLocaleDateString('th-TH',{month:'long',year:'numeric'})}</span>
+      <button class="btn btn-light" onclick="calNext()">ถัดไป ▶</button>
+    </div>
+    <div class="calendar-grid">${monthHTML(y1,m1)}${monthHTML(y2,m2)}</div>
+  </div>`;
+}
+
+window.calPrev = function() { calState.month--; if (calState.month<0) { calState.month=11; calState.year--; } renderOverview(); };
+window.calNext = function() { calState.month++; if (calState.month>11) { calState.month=0; calState.year++; } renderOverview(); };
+
+let _wasMobileView = isMobileView();
+window.addEventListener('resize', () => {
+  const nowMobile = isMobileView();
+  if (nowMobile !== _wasMobileView) {
+    _wasMobileView = nowMobile;
+    if (location.hash === '#overview') renderOverview();
+  }
+});
+
+function renderOverview() {
+  const total = state.items.length;
+  const planned = state.items.filter(i => i.status==='planned').length;
+  const waiting = state.items.filter(i => i.status==='waiting').length;
+  const approved = state.items.filter(i => i.status==='approved').length;
+  const rejected = state.items.filter(i => i.status==='rejected').length;
+
+  document.getElementById('app').innerHTML = `
+    <div class="header">
+      <div class="top">
+        <button class="btn" onclick="location.hash='home'">← กลับสู่เมนูหลัก</button>
+        <button class="btn" onclick="route()">↻ รีเฟรชข้อมูล</button>
+      </div>
+      <p style="color:#94a3b8;margin:10px 0 0; font-weight:600;">Executive Dashboard</p>
+      <h1 style="font-family:Oswald;margin:0;">ภาพรวมการผลิตและควบคุมคุณภาพ</h1>
+    </div>
+    <div class="content">
+      <div class="stats">
+        <div class="stat"><b>${total}</b><span class="muted">งานทั้งหมด</span></div>
+        <div class="stat"><b style="color:#4f46e5">${planned}</b><span class="muted">ตามแผน</span></div>
+        <div class="stat"><b style="color:#ea580c">${waiting}</b><span class="muted">รอ QC ตรวจ</span></div>
+        <div class="stat"><b style="color:#059669">${approved}</b><span class="muted">QC อนุมัติแล้ว</span></div>
+      </div>
+      <div class="card">
+        <h2 style="font-family:Oswald;font-size:22px;">ปฏิทินส่งมอบงาน (Delivery Calendar)</h2>
+        ${renderCalendar()}
+      </div>
+      <div class="card">
+        <h2 style="font-family:Oswald;font-size:22px;">อัปเดตสถานะล่าสุด</h2>
+        ${state.items.length ? state.items.slice().sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).map(itemRow).join('') : '<p style="color:#64748b; text-align:center; padding: 20px;">ยังไม่มีข้อมูลในระบบ</p>'}
+      </div>
+    </div>
+  `;
 }
 // ============================================================
 // 7. PRODUCTION

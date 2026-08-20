@@ -84,11 +84,11 @@
     .stat b { display:block; font:700 28px 'IBM Plex Mono',monospace; margin-bottom: 4px; }
     .stat .muted { font-size: 13px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
     
-    /* Calendar */
+    /* Calendar (ปรับเป็น 1fr คือ 1 คอลัมน์) */
     .calendar-wrap { background:#fff; border:none; border-radius:16px; overflow:auto; }
     .calendar-nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
     .calendar-nav .month-label { font:700 22px Oswald,sans-serif; color: #0f172a; }
-    .calendar-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+    .calendar-grid { display:grid; grid-template-columns:1fr; gap:24px; }
     .month { border:1px solid #e2e8f0; border-radius:16px; padding:16px; background:#fafaf9; }
     .month-title { text-align:center; font:700 18px Oswald; margin-bottom:12px; color: #334155; }
     .week, .days { display:grid; grid-template-columns:repeat(7,1fr); min-width:420px; }
@@ -123,7 +123,6 @@
     .user-pill:hover { background:rgba(255,255,255,0.3); transform: translateY(-1px); }
     
     @media (max-width:768px) {
-      .calendar-grid { grid-template-columns:1fr; }
       .stats { grid-template-columns:repeat(2,1fr); }
       .week, .days { min-width:0; } 
       .day { min-height:56px; padding:4px 3px; }
@@ -334,47 +333,25 @@ function monthHTML(year, month) {
     cells.push(`<div class="day"><div class="day-num">${d}</div>${evHtml}</div>`);
   }
   
-  const name = first.toLocaleDateString('th-TH', { month:'long', year:'numeric' });
-  return `<div class="month"><div class="month-title">${name}</div><div class="week">${['อา','จ','อ','พ','พฤ','ศ','ส'].map(x=>`<div>${x}</div>`).join('')}</div><div class="days">${cells.join('')}</div></div>`;
+  // ลบชื่อเดือนที่เคยอยู่เหนือตารางออก (ย้ายไปอยู่ตรงปุ่มกดด้านบนแทนเพื่อความสะอาดตา)
+  return `<div class="month" style="border:none; padding:0; background:transparent;"><div class="week">${['อา','จ','อ','พ','พฤ','ศ','ส'].map(x=>`<div>${x}</div>`).join('')}</div><div class="days">${cells.join('')}</div></div>`;
 }
 
-function isMobileView() { return window.matchMedia('(max-width:768px)').matches; }
-
+// บังคับแสดง 1 เดือนเสมอ ไม่ว่าจะเปิดบนคอมหรือมือถือ
 function renderCalendar() {
-  let y1=calState.year, m1=calState.month;
-  if (isMobileView()) {
-    return `<div class="calendar-wrap">
-      <div class="calendar-nav">
-        <button class="btn btn-light" onclick="calPrev()">◀</button>
-        <span class="month-label">${new Date(y1,m1).toLocaleDateString('th-TH',{month:'long',year:'numeric'})}</span>
-        <button class="btn btn-light" onclick="calNext()">▶</button>
-      </div>
-      <div class="calendar-grid">${monthHTML(y1,m1)}</div>
-    </div>`;
-  }
-  let y2=y1, m2=m1+1;
-  if (m2>11) { m2=0; y2++; }
+  let y1 = calState.year, m1 = calState.month;
   return `<div class="calendar-wrap">
     <div class="calendar-nav">
       <button class="btn btn-light" onclick="calPrev()">◀ ก่อนหน้า</button>
-      <span class="month-label">${new Date(y1,m1).toLocaleDateString('th-TH',{month:'long',year:'numeric'})} — ${new Date(y2,m2).toLocaleDateString('th-TH',{month:'long',year:'numeric'})}</span>
+      <span class="month-label">${new Date(y1,m1).toLocaleDateString('th-TH',{month:'long',year:'numeric'})}</span>
       <button class="btn btn-light" onclick="calNext()">ถัดไป ▶</button>
     </div>
-    <div class="calendar-grid">${monthHTML(y1,m1)}${monthHTML(y2,m2)}</div>
+    <div class="calendar-grid">${monthHTML(y1,m1)}</div>
   </div>`;
 }
 
 window.calPrev = function() { calState.month--; if (calState.month<0) { calState.month=11; calState.year--; } renderOverview(); };
 window.calNext = function() { calState.month++; if (calState.month>11) { calState.month=0; calState.year++; } renderOverview(); };
-
-let _wasMobileView = isMobileView();
-window.addEventListener('resize', () => {
-  const nowMobile = isMobileView();
-  if (nowMobile !== _wasMobileView) {
-    _wasMobileView = nowMobile;
-    if (location.hash === '#overview') renderOverview();
-  }
-});
 
 function renderOverview() {
   const total = state.items.length;

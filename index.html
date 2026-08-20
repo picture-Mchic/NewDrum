@@ -313,8 +313,8 @@ function monthHTML(year, month) {
     const key = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     
     const ev = state.items.filter(i => {
-      const planStr = (i.dueDate || '').substring(0, 10);
-      const actualStr = (i.actualDate || '').substring(0, 10);
+      const planStr = toDateKey(i.dueDate);
+const actualStr = toDateKey(i.actualDate);
       return planStr === key || actualStr === key;
     });
 

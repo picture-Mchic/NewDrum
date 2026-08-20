@@ -125,7 +125,7 @@
     @media (max-width:768px) {
       .calendar-grid { grid-template-columns:1fr; }
       .stats { grid-template-columns:repeat(2,1fr); }
-      .week, .days { min-width:0; } /* เดิม 420px/320px ทำให้ต้องเลื่อนซ้ายขวา — ตัดออกให้หดตามความกว้างจอจริง */
+      .week, .days { min-width:0; } 
       .day { min-height:56px; padding:4px 3px; }
       .day-num { font-size:11px; }
       .event { font-size:9.5px; padding:3px 4px; margin-top:2px; }
@@ -144,19 +144,16 @@
 // ============================================================
 // 1. CONFIG & STATE
 // ============================================================
-// 🔧 วางลิงก์ Web App ที่ได้จากการ Deploy Google Apps Script (Code.gs) ตรงนี้
 const API_URL = 'https://script.google.com/macros/s/AKfycbyv74oVS1P6Os7ZHscpnbGizJ67u3Z1ofo18Uc0BD3tnLipr0IpD36jiPbEKLMt9ZCZpA/exec';
 
 const MODELS = ['D46H','D41H','578W'];
 let state = { items: [] };
 let ui = { prodTab: 'plan', qcTab: 'pending' };
-let calState = { year: 2026, month: 7 }; // default August 2026
+let calState = { year: 2026, month: 7 }; 
 
 // ============================================================
 // 2. HELPERS
 // ============================================================
-// ชื่อผู้ใช้ + แผนก ยังเก็บไว้ที่เครื่อง (device) เพื่อไม่ต้อง login ซ้ำทุกครั้ง
-// แต่ข้อมูลงานจริง (Items) และ Log การเข้าใช้ ทั้งหมดอยู่บน Google Sheet ผ่าน Apps Script
 function user() { return localStorage.getItem('plan_user') || ''; }
 function department() { return localStorage.getItem('plan_dept') || ''; }
 function setUser(name, dept) {
@@ -167,7 +164,6 @@ function deptLabel(d) { return d === 'qc' ? 'ฝ่าย QC' : d === 'productio
 
 function id() { return crypto.randomUUID ? crypto.randomUUID() : 'id_'+Date.now()+'_'+Math.random().toString(36).slice(2); }
 
-// เรียก backend (Google Apps Script Web App) — ใช้ text/plain เพื่อเลี่ยงปัญหา CORS preflight ของ Apps Script
 async function apiCall(action, payload) {
   if (!API_URL || API_URL.indexOf('http') !== 0) {
     toast('⚠️ ยังไม่ได้ตั้งค่า API_URL — ดูคำแนะนำการติดตั้งที่ท้ายไฟล์ Code.gs');
@@ -234,7 +230,7 @@ window.login = async function() {
   const dept = document.getElementById('gateDept').value;
   if (!n) { toast('กรุณากรอกชื่อ'); return; }
   setUser(n, dept);
-  await apiCall('login', {}); // บันทึก Log การเข้าใช้งาน (ชื่อ + แผนก) ลง Google Sheet
+  await apiCall('login', {}); 
   route();
 };
 
@@ -244,8 +240,6 @@ window.login = async function() {
 async function route() {
   if (!user() || !department()) return gate();
 
-  // จำกัดสิทธิ์การเข้าถึงตามแผนก: Production เห็นแค่ Overview+Production, QC เห็นแค่ Overview+QC
-  // ⚠️ นี่คือการซ่อนหน้าใน UI เพื่อความสะดวก ไม่ใช่ระบบความปลอดภัยจริง เพราะยังไม่มีรหัสผ่าน
   const hash = location.hash;
   const dept = department();
   if (hash === '#production' && dept !== 'production') {
@@ -261,6 +255,7 @@ async function route() {
 
   document.getElementById('app').innerHTML = '<div style="text-align:center;padding:120px 20px;color:#64748b;font-weight:600;">⏳ กำลังโหลดข้อมูลจาก Google Sheet...</div>';
   await loadState();
+  
   if (hash === '#production') renderProduction();
   else if (hash === '#qc') renderQC();
   else if (hash === '#overview') renderOverview();
@@ -303,9 +298,6 @@ function renderHome() {
   `;
 }
 
-// ============================================================
-// 6. OVERVIEW (Dashboard) with Calendar
-// ============================================================
 // ============================================================
 // 6. OVERVIEW (Dashboard) with Calendar
 // ============================================================
@@ -418,6 +410,7 @@ function renderOverview() {
     </div>
   `;
 }
+
 // ============================================================
 // 7. PRODUCTION
 // ============================================================
